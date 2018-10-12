@@ -14,38 +14,76 @@
 
         <audio controls autoplay></audio>
     </div>
+
+    <canvas style="margin-top: 25px;" class="visualizer" width="800" height="200"></canvas>
 </div>
 
 <script>
+    let _source;
+    let _drawVisual;
+
+    const _audioCtx = new AudioContext();
+    const _analyser = _audioCtx.createAnalyser();
+
+    const $mediaControl = document.querySelector('audio');
+
+    const $canvas = document.querySelector('canvas');
+    const _canvasCtx = $canvas.getContext('2d');
+    const _canvasProp = {
+        width: $canvas.width,
+        height: $canvas.height
+    };
+
     function getUserMedia(options, successCallback, failureCallback) {
-        const api = navigator.getUserMedia || navigator.webkitGetUserMedia ||
-            navigator.mozGetUserMedia || navigator.msGetUserMedia;
-        if (api) {
-            return api.bind(navigator)(options, successCallback, failureCallback);
+        if (navigator.getUserMedia) {
+            return navigator.getUserMedia.bind(navigator)(options, successCallback, failureCallback);
         }
     }
 
-    function getStream (type) {
-        if (!navigator.getUserMedia && !navigator.webkitGetUserMedia &&
-            !navigator.mozGetUserMedia && !navigator.msGetUserMedia) {
-            alert('User Media API not supported.');
-            return;
-        }
+    function getStream () {
+        getUserMedia({audio: true}, (stream) => {
+            if ('srcObject' in $mediaControl) {
+                $mediaControl.srcObject = stream;
+                $mediaControl.src = (window.URL || window.webkitURL).createObjectURL(stream);
 
-        let constraints = {};
-        constraints[type] = true;
-        getUserMedia(constraints, function (stream) {
-            let mediaControl = document.querySelector(type);
-
-            if ('srcObject' in mediaControl) {
-                mediaControl.srcObject = stream;
-                mediaControl.src = (window.URL || window.webkitURL).createObjectURL(stream);
-            } else if (navigator.mozGetUserMedia) {
-                mediaControl.mozSrcObject = stream;
+                _source = _audioCtx.createMediaStreamSource(stream);
+                _source.connect(_analyser);
+                visualize();
             }
-        }, function (err) {
+        }, (err) => {
             alert('Error: ' + err);
         });
+    }
+
+    function visualize() {
+        _analyser.fftSize = 128;
+        let bufferLengthAlt = _analyser.frequencyBinCount;
+        let dataArrayAlt = new Uint8Array(bufferLengthAlt);
+
+        _canvasCtx.clearRect(0, 0, _canvasProp.width, _canvasProp.height);
+
+        let draw = function() {
+            _drawVisual = requestAnimationFrame(draw);
+            _analyser.getByteFrequencyData(dataArrayAlt);
+
+            _canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+            _canvasCtx.fillRect(0, 0, _canvasProp.width, _canvasProp.height);
+
+            let x = 0;
+            let _barHeight;
+            const _barWidth = (_canvasProp.width / bufferLengthAlt) * 2.5;
+
+            for(let i = 0; i < bufferLengthAlt; i++) {
+                _barHeight = dataArrayAlt[i];
+
+                _canvasCtx.fillStyle = 'rgb(' + (_barHeight + 100) + ', 50, 50)';
+                _canvasCtx.fillRect(x, (_canvasProp.height - _barHeight) / 2, _barWidth, _barHeight);
+
+                x += _barWidth + 1;
+            }
+        };
+
+        draw();
     }
 </script>
 </body>
