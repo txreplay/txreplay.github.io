@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Music App</title>
+</head>
+<body>
+<div class="container" style="margin-top: 10px">
+    <div>
+        <p><button type="button" class="btn btn-lg btn-default" onclick="getStream('audio')">Grab audio</button></p>
+
+        <audio style="display: none;" controls autoplay muted></audio>
+    </div>
+
+    <canvas style="margin-top: 25px;" class="visualizer" width="800" height="200"></canvas>
+</div>
+
+<script>
+    let _source;
+    let _drawVisual;
+
+    const _audioCtx = new AudioContext();
+    const _analyser = _audioCtx.createAnalyser();
+
+    const $mediaControl = document.querySelector('audio');
+
+    const $canvas = document.querySelector('canvas');
+    const _canvasCtx = $canvas.getContext('2d');
+    const _canvasProp = {
+        width: $canvas.width,
+        height: $canvas.height
+    };
+
+    function getUserMedia(options, successCallback, failureCallback) {
+        if (navigator.getUserMedia) {
+            return navigator.getUserMedia.bind(navigator)(options, successCallback, failureCallback);
+        }
+    }
+
+    function getStream () {
+        getUserMedia({audio: true}, (stream) => {
+            if ('srcObject' in $mediaControl) {
+                $mediaControl.srcObject = stream;
+                $mediaControl.src = (window.URL || window.webkitURL).createObjectURL(stream);
+
+                _source = _audioCtx.createMediaStreamSource(stream);
+                _source.connect(_analyser);
+                visualize();
+            }
+        }, (err) => {
+            alert('Error: ' + err);
+        });
+    }
+
+    function visualize() {
+        _analyser.fftSize = 512;
+        let bufferLengthAlt = _analyser.frequencyBinCount;
+        let dataArrayAlt = new Uint8Array(bufferLengthAlt);
+
+        _canvasCtx.clearRect(0, 0, _canvasProp.width, _canvasProp.height);
+
+        let draw = function() {
+            _drawVisual = requestAnimationFrame(draw);
+            _analyser.getByteFrequencyData(dataArrayAlt);
+
+            _canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+            _canvasCtx.fillRect(0, 0, _canvasProp.width, _canvasProp.height);
+
+            let x = 0;
+            let _barHeight;
+            const _barWidth = (_canvasProp.width / bufferLengthAlt) * 2.5;
+
+            for(let i = 0; i < bufferLengthAlt; i++) {
+                _barHeight = dataArrayAlt[i];
+
+                _canvasCtx.fillStyle = 'rgb(' + (_barHeight + 100) + ', 50, 50)';
+                _canvasCtx.fillRect(x, (_canvasProp.height - _barHeight) / 2, _barWidth, _barHeight);
+
+                x += _barWidth + 1;
+            }
+        };
+
+        draw();
+    }
+</script>
+</body>
+</html>
