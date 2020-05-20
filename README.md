@@ -1,4 +1,4 @@
-# txreplay.github.io
+# txreplay
 
 ## Project setup
 ```
