@@ -1,3 +1,3 @@
 module.exports = {
-  publicPath: "/txreplay.github.io/"
+  publicPath: "/txreplay/"
 };
