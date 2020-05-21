@@ -12,11 +12,12 @@
   },
   "lint-staged": {
     "src/**/*.{js,vue}": [
-      "npm run lint:vue",
+      "npm run lint",
       "git add"
     ],
     "src/**/*.scss": [
-      "npm run lint:scss", "git add"
+      "npm run lint:scss",
+      "git add"
     ]
   },
   "husky": {
