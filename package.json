@@ -5,12 +5,18 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
+    "lint": "npm run lint:vue && npm run lint:scss",
+    "lint:vue": "vue-cli-service lint",
+    "lint:scss": "stylelint --fix 'src/**/*.{vue,scss}'",
     "deploy": "node scripts/gh-pages-deploy.js"
   },
   "lint-staged": {
     "src/**/*.{js,vue}": [
-      "npm run lint", "git add"
+      "npm run lint:vue",
+      "git add"
+    ],
+    "src/**/*.scss": [
+      "npm run lint:scss", "git add"
     ]
   },
   "husky": {
@@ -41,6 +47,8 @@
     "prettier": "^1.19.1",
     "sass": "^1.26.3",
     "sass-loader": "^8.0.2",
+    "stylelint": "^13.5.0",
+    "stylelint-config-standard": "^20.0.0",
     "vue-template-compiler": "^2.6.11"
   }
 }
